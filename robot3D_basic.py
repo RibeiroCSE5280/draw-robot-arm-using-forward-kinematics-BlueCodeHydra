@@ -90,42 +90,21 @@ def createCoordinateFrameMesh():
     return F
 
 
-def forward_kinematics(Phi, L1, L2, L3, L4):
-    """
-    Calculates the transformation matrices and the location of the end-effector.
-    
+def getLocalFrameMatrix(R_ij, t_ij): 
+    """Returns the matrix representing the local frame
     Args:
-        Phi (4x1 ndarray): Array containing the four joint angles.
-        L1, L2, L3, L4 (float): Lengths of the parts of the robot arm.
-    
+      R_ij: rotation of Frame j w.r.t. Frame i 
+      t_ij: translation of Frame j w.r.t. Frame i 
     Returns:
-        T_01, T_02, T_03, T_04 (4x4 ndarrays): Transformation matrices for each frame.
-        e (3x1 ndarray): 3D coordinates, the location of the end-effector in space.
-    """
-    T_0 = np.eye(4)  # Base frame (world frame)
-    transformations = [T_0]  # Initialize with the base frame
-
-    # Accumulate transformations for each segment
-    lengths = [0, L1, L2, L3]  # The first segment (base) has no length
-    for i, (phi, L) in enumerate(zip(Phi, lengths)):
-        R = RotationMatrix(phi)
-        T = np.eye(4)
-        T[:3, :3] = R
-        if i > 0:  # No translation for the base frame
-            T[:3, 3] = [lengths[i-1], 0, 0]  # Translate along x of the previous frame
-        transformations.append(T @ transformations[i])  # Update transformation
-
-    # Final transformation matrix and end-effector position
-    T_04 = transformations[-1] @ np.array([[1, 0, 0, L4],
-                                           [0, 1, 0, 0],
-                                           [0, 0, 1, 0],
-                                           [0, 0, 0, 1]])
-    e = T_04[:3, 3]  # Extract translation component for end-effector position
-
-    return transformations[1], transformations[2], transformations[3], T_04, e
-
+      T_ij: Matrix of Frame j w.r.t. Frame i. 
+      
+    """             
+    # Rigid-body transformation [ R t ]
+    T_ij = np.block([[R_ij,                t_ij],
+                     [np.zeros((1, 3)),       1]])
+    
+    return T_ij
 	
-
 def main():
     # Set the limits of the graph x, y, and z ranges 
     axes = Axes(xrange=(0,20), yrange=(-2,10), zrange=(0,6))
@@ -133,15 +112,15 @@ def main():
     # Lengths of arm parts 
     L1 = 5   # Length of link 1
     L2 = 8   # Length of link 2
-    L3 = 3   # Length of link 3 
+    L3 = 3   # Length of link 3 (assuming you have a third link)
 
     # Joint radius
     joint_radius = 0.4
 
     # Joint angles 
-    phi1 = 30     # Rotation angle of part 1 in degrees
-    phi2 = -10    # Rotation angle of part 2 in degrees
-    phi3 = -10     # Rotation angle of part 3 in degrees
+    phi1 = 0     # Rotation angle of part 1 in degrees
+    phi2 = 0    # Rotation angle of part 2 in degrees
+    phi3 = 0    # Rotation angle of part 3 in degrees
 
     # Matrix of Frame 1 (written w.r.t. Frame 0, which is the world frame) 
     R_01 = RotationMatrix(phi1, axis_name='z')   # Rotation matrix
